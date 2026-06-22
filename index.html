@@ -506,9 +506,25 @@ pages.message = () => {
   </div>
 
   <div class="section">
-    <div class="section-head"><h2>📇 모바일 명함</h2><span style="font-size:12px;color:var(--gray);">문자에 첨부하거나 카카오톡으로 함께 전달해보세요</span></div>
-    <div class="card" style="max-width:380px;">
-      <div id="bizCardPreview" style="border-radius:16px;background:linear-gradient(135deg,#0b5fff,#0a3fb8);color:#fff;padding:22px;">
+    <div class="section-head"><h2>🧑‍💼 중개사 상세 이력 요약</h2><span style="font-size:12px;color:var(--gray);">고객 개인정보를 추정하는 표현 대신, 신뢰를 줄 수 있는 중개사 이력을 요약해 보여드립니다</span></div>
+    <div class="card" style="max-width:480px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:20px;">🧑‍💼</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;">${state.office.agentName}</div>
+          <div style="font-size:12px;color:var(--gray);">${state.office.officeName}</div>
+        </div>
+      </div>
+      <table>
+        <tr><td style="color:var(--gray);">경력</td><td style="text-align:right;font-weight:600;">${state.office.years}년차 공인중개사</td></tr>
+        <tr><td style="color:var(--gray);">사무소 위치</td><td style="text-align:right;font-weight:600;">${state.office.location}</td></tr>
+        <tr><td style="color:var(--gray);">전문 거래 지역·아파트</td><td style="text-align:right;font-weight:600;">${state.office.specialty}</td></tr>
+        <tr><td style="color:var(--gray);">차별화 경력</td><td style="text-align:right;font-weight:600;">${state.office.career}</td></tr>
+        <tr><td style="color:var(--gray);">직원 규모</td><td style="text-align:right;font-weight:600;">${state.office.staffSize}</td></tr>
+        <tr><td style="color:var(--gray);">사무소 특장점</td><td style="text-align:right;font-weight:600;">${state.office.strength}</td></tr>
+        <tr><td style="color:var(--gray);border-bottom:none;">연락처</td><td style="text-align:right;font-weight:600;border-bottom:none;">${state.office.phone}</td></tr>
+      </table>
+      <div id="bizCardPreview" style="margin-top:16px;border-radius:16px;background:linear-gradient(135deg,#0b5fff,#0a3fb8);color:#fff;padding:22px;">
         <div style="font-size:11px;opacity:.85;">${state.office.officeName}</div>
         <div style="font-size:20px;font-weight:800;margin-top:4px;">${state.office.agentName}</div>
         <div style="font-size:12px;margin-top:6px;opacity:.92;line-height:1.5;">${state.office.years}년차 공인중개사 · ${state.office.career}</div>
@@ -528,11 +544,12 @@ pages.message = () => {
   `;
 };
 
-/* 세그먼트별 짧은 후킹 문구 (1줄) — 본문은 composeMessage()에서 구조화하여 조립 */
+/* 세그먼트별 짧은 후킹 문구 (1줄). 고객의 개인 상황(전세만기 등)을 안다는 인상을 주지 않도록
+   "왜 우리에게 연락하면 좋은지"를 어필하는 일반적인 문구로 구성 — 본문은 composeMessage()에서 구조화하여 조립 */
 const msgHooks = {
-  lease: ['전세 만기 다가오시죠?', '곧 전세 만기 예정이시죠?', '재계약 전, 꼭 비교해보세요'],
+  lease: ['안녕하세요, 고객님', '이사·재계약 시즌 안내드립니다', '믿을 수 있는 중개사를 찾고 계신가요?'],
   call:  ['문의 감사합니다', '찾으시던 조건, 안내드려요', '추가 매물 안내드립니다'],
-  app:   ['관심 지역 매물 보고 계셨죠?', '둘러보시던 그 지역이에요', '놓치면 아쉬운 타이밍입니다'],
+  app:   ['안녕하세요, 고객님', '신규 매물 안내드립니다', '상담 도와드리겠습니다'],
   default: ['안녕하세요, 고객님', '신규 매물 안내드립니다', '상담 도와드리겠습니다'],
 };
 function composeMessage(segId, hookIdx){
