@@ -181,17 +181,44 @@ const segments = [
   },
 ];
 
+const COST_PER_SEND = 200; // 발송건당 과금 (원)
+
+const districts = [
+  { gu:'강남구', dongs:[
+    {name:'역삼동', weight:0.18}, {name:'대치동', weight:0.15},
+    {name:'삼성동', weight:0.10}, {name:'논현동', weight:0.08},
+  ]},
+  { gu:'서초구', dongs:[
+    {name:'서초동', weight:0.12}, {name:'반포동', weight:0.10}, {name:'잠원동', weight:0.07},
+  ]},
+  { gu:'송파구', dongs:[
+    {name:'잠실동', weight:0.12}, {name:'문정동', weight:0.08},
+  ]},
+];
+const allDongNames = districts.flatMap(d=>d.dongs.map(x=>x.name));
+
 let state = {
   selectedSegments: [],
+  selectedDongs: [...allDongNames], // 기본값: 전체 지역 (제한 없음)
   property: { region:'서울 강남구 역삼동', size:'24평', price:'전세 6억', feature:'역세권, 리모델링 완료' },
   generatedMsgs: {},
   budget: 150000,
   sentCampaigns: [
-    {id:1, date:'2026-06-18', segment:'전세만기 임박형', sent:96, clickRate:18, replyRate:9, cost:48000, status:'완료'},
-    {id:2, date:'2026-06-12', segment:'통화이력 보유형', sent:52, clickRate:31, replyRate:12, cost:26000, status:'완료'},
-    {id:3, date:'2026-06-05', segment:'앱탐색형 (관심)', sent:180, clickRate:7, replyRate:2, cost:90000, status:'완료'},
+    {id:1, date:'2026-06-18', segment:'전세만기 임박형', sent:96, clickRate:18, replyRate:9, cost:96*COST_PER_SEND, status:'완료'},
+    {id:2, date:'2026-06-12', segment:'통화이력 보유형', sent:52, clickRate:31, replyRate:12, cost:52*COST_PER_SEND, status:'완료'},
+    {id:3, date:'2026-06-05', segment:'앱탐색형 (관심)', sent:180, clickRate:7, replyRate:2, cost:180*COST_PER_SEND, status:'완료'},
   ]
 };
+
+function regionRatio(){
+  if(state.selectedDongs.length === allDongNames.length) return 1;
+  let ratio = 0;
+  districts.forEach(d=>d.dongs.forEach(x=>{ if(state.selectedDongs.includes(x.name)) ratio += x.weight; }));
+  return ratio;
+}
+function getFilteredCount(seg){
+  return Math.max(0, Math.round(seg.count * regionRatio()));
+}
 
 /* ===================== Router ===================== */
 const pages = {};
@@ -227,7 +254,7 @@ pages.dashboard = () => `
     <div class="card"><h3>이번달 발굴된 타겟</h3><div class="big">433명</div><div class="delta up">▲ 전월 대비 12%</div></div>
     <div class="card"><h3>발송 캠페인</h3><div class="big">3건</div><div class="delta up">완료 3 · 진행중 0</div></div>
     <div class="card"><h3>평균 회신율</h3><div class="big">7.7%</div><div class="delta up">▲ 1.4%p</div></div>
-    <div class="card"><h3>이번달 광고비</h3><div class="big">164,000원</div><div class="delta down">CPM+CPA 혼합과금</div></div>
+    <div class="card"><h3>이번달 광고비</h3><div class="big">${state.sentCampaigns.reduce((a,c)=>a+c.cost,0).toLocaleString()}원</div><div class="delta down">발송건당 200원 과금</div></div>
   </div>
 
   <div class="section">
@@ -288,22 +315,55 @@ pages.target = () => `
   <div class="privacy-note"><span class="ic">🔒</span><span>개인 식별정보는 플랫폼(SKT) 내부에서만 처리됩니다. 중개사에게는 동의를 거친 세그먼트·집계 결과만 제공되며, 미동의 고객은 추출 단계에서 자동 제외됩니다.</span></div>
 
   <div class="section">
-    <div class="section-head"><h2>세그먼트 선택 (복수 선택 가능)</h2><span class="sub" style="font-size:12px;color:var(--gray)">총 433명 매칭 · 동의 기반</span></div>
+    <div class="section-head">
+      <h2>📍 발송 지역 제한 (행정동/구 단위)</h2>
+      <span style="font-size:12px;color:var(--gray)">선택한 지역 신호를 보유한 고객만 매칭됩니다 · 현재 비율 ${Math.round(regionRatio()*100)}%</span>
+    </div>
+    <div class="card">
+      <div class="grid cols-3" id="districtGrid">
+        ${districts.map(d=>{
+          const guAll = d.dongs.every(x=>state.selectedDongs.includes(x.name));
+          return `
+          <div style="border:1px solid var(--border);border-radius:10px;padding:12px;">
+            <label class="checkbox-row" style="font-weight:700;font-size:13px;margin-bottom:8px;cursor:pointer;">
+              <input type="checkbox" class="guCheck" data-gu="${d.gu}" ${guAll?'checked':''}> ${d.gu} 전체
+            </label>
+            ${d.dongs.map(x=>`
+              <label class="checkbox-row" style="font-size:13px;color:var(--text-soft);margin:4px 0 4px 18px;cursor:pointer;">
+                <input type="checkbox" class="dongCheck" data-dong="${x.name}" ${state.selectedDongs.includes(x.name)?'checked':''}> ${x.name}
+              </label>
+            `).join('')}
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn secondary" id="selectAllDongBtn">전체 지역 선택</button>
+        <button class="btn ghost" id="clearDongBtn">전체 해제</button>
+      </div>
+      <div class="privacy-note"><span class="ic">⚠️</span><span>지역 제한은 "신호(통화·앱사용)가 있고 동의까지 받은 기존 리드"의 범위를 좁히는 용도입니다. 신호 없는 불특정 다수에게 광고를 보내는 것은 이 기능으로 가능하지 않습니다.</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>세그먼트 선택 (복수 선택 가능)</h2><span class="sub" style="font-size:12px;color:var(--gray)">총 ${segments.reduce((a,s)=>a+getFilteredCount(s),0)}명 매칭 · 동의 기반 · 지역 필터 적용됨</span></div>
     <div class="grid cols-3" id="segGrid">
-      ${segments.map(s=>`
+      ${segments.map(s=>{
+        const fc = getFilteredCount(s);
+        return `
         <div class="seg-card ${state.selectedSegments.includes(s.id)?'selected':''}" data-seg="${s.id}">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div class="seg-title">${s.icon} ${s.title}</div>
             <span class="badge ${s.score>=80?'high':s.score>=60?'mid':'low'}">스코어 ${s.score}</span>
           </div>
-          <div class="seg-count">${s.count}<span style="font-size:13px;color:var(--gray);font-weight:500;">명</span></div>
+          <div class="seg-count">${fc}<span style="font-size:13px;color:var(--gray);font-weight:500;">명</span></div>
+          ${fc!==s.count?`<div style="font-size:11px;color:var(--gray);margin-top:-4px;">전체 ${s.count}명 중 지역 필터 적용</div>`:''}
           <div class="score-bar"><div style="width:${s.score}%"></div></div>
           <div class="seg-desc">${s.desc}</div>
           <div style="margin-top:10px;font-size:11px;color:var(--gray);">
             ${s.signals.map(sig=>`· ${sig}`).join('<br>')}
           </div>
         </div>
-      `).join('')}
+      `;}).join('')}
     </div>
   </div>
 
@@ -340,7 +400,7 @@ pages.message = () => {
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <div style="font-weight:700;font-size:14px;">${s.icon} ${s.title}</div>
-            <span class="pill blue">${s.count}명</span>
+            <span class="pill blue">${getFilteredCount(s)}명</span>
           </div>
           <div class="phone-frame">
             <div class="phone-screen">
@@ -386,9 +446,10 @@ const msgTemplates = {
 /* ===================== Send Flow ===================== */
 pages.send = () => {
   const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
-  const totalCount = chosen.reduce((a,s)=>a+s.count,0);
+  const totalCount = chosen.reduce((a,s)=>a+getFilteredCount(s),0);
   const excluded = Math.round(totalCount*0.04);
   const finalCount = totalCount-excluded;
+  const estCost = finalCount*COST_PER_SEND;
   return `
   <div class="topbar"><div><h1>AI 자동 발송</h1><div class="sub">자연어로 요청하면 Agent가 대상 선정·동의 필터링·법정 표기·스케줄을 자동 처리합니다.</div></div></div>
 
@@ -397,15 +458,17 @@ pages.send = () => {
   <div class="card">
     <h3 style="margin-bottom:10px;">자연어 발송 요청</h3>
     <div class="msg-preview">"<b>${chosen.map(c=>c.title).join(', ')}</b> 타겟 ${totalCount}명에게 발송해줘, 예산 ${state.budget.toLocaleString()}원 이내로."</div>
+    ${regionRatio()<1?`<div style="font-size:12px;color:var(--gray);margin-top:8px;">📍 지역 제한 적용 중: ${state.selectedDongs.length===0?'선택된 지역 없음':state.selectedDongs.join(', ')}</div>`:''}
   </div>
 
   <div class="section grid cols-2">
     <div class="card">
       <h3>1. 대상 선정 및 동의 필터링</h3>
       <table>
-        <tr><td>매칭된 전체 대상</td><td style="text-align:right;font-weight:700;">${totalCount}명</td></tr>
+        <tr><td>매칭된 전체 대상 (지역 필터 적용)</td><td style="text-align:right;font-weight:700;">${totalCount}명</td></tr>
         <tr><td style="color:var(--red);">동의 미확보 자동 제외</td><td style="text-align:right;color:var(--red);">-${excluded}명</td></tr>
         <tr><td>최종 발송 대상</td><td style="text-align:right;font-weight:700;color:var(--blue);">${finalCount}명</td></tr>
+        <tr><td>예상 발송 비용 (건당 ${COST_PER_SEND}원)</td><td style="text-align:right;font-weight:700;">${estCost.toLocaleString()}원</td></tr>
       </table>
     </div>
     <div class="card">
@@ -432,7 +495,7 @@ pages.send = () => {
       <input type="range" min="50000" max="300000" step="10000" value="${state.budget}" id="budgetRange" style="width:100%;">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;">
         <span>예산: <b id="budgetVal">${state.budget.toLocaleString()}</b>원</span>
-        <span style="color:var(--gray);">CPM + CPA 혼합 과금</span>
+        <span style="color:var(--gray);">발송건당 ${COST_PER_SEND}원 과금</span>
       </div>
     </div>
   </div>
@@ -564,7 +627,8 @@ pages.privacy = () => `
 function attachHandlers(page){
   if(page==='target'){
     document.querySelectorAll('.seg-card').forEach(card=>{
-      card.addEventListener('click', ()=>{
+      card.addEventListener('click', (e)=>{
+        if(e.target.closest('input')) return;
         const id = card.dataset.seg;
         const idx = state.selectedSegments.indexOf(id);
         if(idx>-1) state.selectedSegments.splice(idx,1);
@@ -572,6 +636,30 @@ function attachHandlers(page){
         render('target');
       });
     });
+    document.querySelectorAll('.dongCheck').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const name = cb.dataset.dong;
+        const idx = state.selectedDongs.indexOf(name);
+        if(cb.checked && idx===-1) state.selectedDongs.push(name);
+        if(!cb.checked && idx>-1) state.selectedDongs.splice(idx,1);
+        render('target');
+      });
+    });
+    document.querySelectorAll('.guCheck').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const gu = districts.find(d=>d.gu===cb.dataset.gu);
+        gu.dongs.forEach(x=>{
+          const idx = state.selectedDongs.indexOf(x.name);
+          if(cb.checked && idx===-1) state.selectedDongs.push(x.name);
+          if(!cb.checked && idx>-1) state.selectedDongs.splice(idx,1);
+        });
+        render('target');
+      });
+    });
+    const selAll = document.getElementById('selectAllDongBtn');
+    if(selAll) selAll.addEventListener('click', ()=>{ state.selectedDongs=[...allDongNames]; render('target'); });
+    const clrAll = document.getElementById('clearDongBtn');
+    if(clrAll) clrAll.addEventListener('click', ()=>{ state.selectedDongs=[]; render('target'); });
   }
   if(page==='message'){
     const genBtn = document.getElementById('genBtn');
@@ -622,21 +710,22 @@ function generateMsg(segId, random){
 
 function openApproveModal(){
   const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
-  const totalCount = chosen.reduce((a,s)=>a+s.count,0);
+  const totalCount = chosen.reduce((a,s)=>a+getFilteredCount(s),0);
   const excluded = Math.round(totalCount*0.04);
   const finalCount = totalCount-excluded;
-  const cpm = 500, cpaRate=0.08, cpaCost=2000;
-  const estCost = finalCount*cpm + Math.round(finalCount*cpaRate)*cpaCost;
+  const estCost = finalCount*COST_PER_SEND;
   document.getElementById('modalBody').innerHTML = `
     <h3>📤 발송 승인 요청</h3>
     <div class="modal-row"><span>대상 세그먼트</span><b>${chosen.map(c=>c.title).join(', ')}</b></div>
+    <div class="modal-row"><span>발송 지역</span><b style="text-align:right;max-width:240px;">${regionRatio()===1?'전체 지역':(state.selectedDongs.join(', ')||'선택된 지역 없음')}</b></div>
     <div class="modal-row"><span>최종 발송 대상</span><b>${finalCount}명</b></div>
-    <div class="modal-row"><span>예상 비용 (CPM+CPA)</span><b>${estCost.toLocaleString()}원</b></div>
+    <div class="modal-row"><span>발송 단가</span><b>건당 ${COST_PER_SEND}원</b></div>
+    <div class="modal-row"><span>예상 비용</span><b>${estCost.toLocaleString()}원</b></div>
     <div class="modal-row"><span>설정 예산</span><b style="color:${estCost>state.budget?'var(--red)':'var(--green)'}">${state.budget.toLocaleString()}원</b></div>
     <div class="modal-row" style="border-bottom:none;"><span>발송 예정 시간대</span><b>평일 11:00~13:00</b></div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">취소</button>
-      <button class="btn primary" onclick="confirmSend(${finalCount}, ${estCost})">승인하고 발송</button>
+      <button class="btn primary" ${finalCount===0?'disabled':''} onclick="confirmSend(${finalCount}, ${estCost})">승인하고 발송</button>
     </div>
   `;
   document.getElementById('modalOverlay').classList.add('show');
