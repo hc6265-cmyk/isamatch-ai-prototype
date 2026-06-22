@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이사매치 AI — 부동산 중개사용 AI CRM·광고 플랫폼</title>
+<style>
+  :root{
+    --blue:#0b5fff; --blue-dark:#0a3fb8; --blue-light:#eaf1ff;
+    --green:#16a34a; --green-light:#e8f7ee;
+    --orange:#f59e0b; --orange-light:#fef3e2;
+    --red:#ef4444; --red-light:#fde9e9;
+    --gray:#6b7280; --gray-light:#f3f4f6; --border:#e5e7eb;
+    --text:#111827; --text-soft:#4b5563;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Pretendard,-apple-system,sans-serif;background:#f5f6fa;color:var(--text);}
+  .app{display:flex;min-height:100vh;}
+  /* Sidebar */
+  .sidebar{width:230px;background:#0d1726;color:#fff;flex-shrink:0;display:flex;flex-direction:column;padding:20px 0;}
+  .brand{padding:0 20px 20px;font-weight:800;font-size:18px;border-bottom:1px solid #1f2c40;display:flex;align-items:center;gap:8px;}
+  .brand span.tag{font-size:10px;background:var(--blue);padding:2px 6px;border-radius:6px;font-weight:600;}
+  .nav{margin-top:10px;display:flex;flex-direction:column;gap:2px;}
+  .nav button{all:unset;cursor:pointer;color:#c4cdda;padding:12px 20px;font-size:14px;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;}
+  .nav button:hover{background:#16213a;color:#fff;}
+  .nav button.active{background:#16213a;color:#fff;border-left-color:var(--blue);font-weight:600;}
+  .nav .icon{width:18px;text-align:center;}
+  .sidebar-foot{margin-top:auto;padding:16px 20px;font-size:11px;color:#5c6b85;border-top:1px solid #1f2c40;}
+
+  /* Main */
+  .main{flex:1;padding:28px 36px;overflow-x:hidden;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+  .topbar h1{font-size:22px;margin:0;}
+  .topbar .sub{color:var(--gray);font-size:13px;margin-top:4px;}
+  .pill{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .pill.blue{background:var(--blue-light);color:var(--blue);}
+  .pill.green{background:var(--green-light);color:var(--green);}
+  .pill.orange{background:var(--orange-light);color:#b45309;}
+  .pill.red{background:var(--red-light);color:var(--red);}
+
+  .grid{display:grid;gap:18px;}
+  .grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .grid.cols-2{grid-template-columns:repeat(2,1fr);}
+
+  .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+  .card h3{margin:0 0 6px;font-size:14px;color:var(--gray);font-weight:600;}
+  .card .big{font-size:26px;font-weight:800;}
+  .card .delta{font-size:12px;font-weight:600;}
+  .delta.up{color:var(--green);}
+  .delta.down{color:var(--red);}
+
+  .section{margin-top:26px;}
+  .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .section-head h2{font-size:16px;margin:0;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  th{color:var(--gray);font-weight:600;background:#fafbfc;}
+  tr:hover td{background:#fafcff;}
+
+  .btn{all:unset;cursor:pointer;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+  .btn.primary{background:var(--blue);color:#fff;}
+  .btn.primary:hover{background:var(--blue-dark);}
+  .btn.secondary{background:var(--gray-light);color:var(--text);}
+  .btn.secondary:hover{background:#e8e9ed;}
+  .btn.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue-light);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;}
+  .badge.high{background:var(--red-light);color:var(--red);}
+  .badge.mid{background:var(--orange-light);color:#b45309;}
+  .badge.low{background:var(--gray-light);color:var(--gray);}
+
+  .score-bar{width:80px;height:6px;background:#eee;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px;}
+  .score-bar > div{height:100%;background:linear-gradient(90deg,var(--blue),#5b9aff);}
+
+  .checkbox-row{display:flex;align-items:center;gap:8px;}
+
+  .stepper{display:flex;gap:0;margin-bottom:24px;}
+  .step{flex:1;text-align:center;padding:10px 0;border-bottom:3px solid var(--border);color:var(--gray);font-size:13px;font-weight:600;position:relative;}
+  .step.active{color:var(--blue);border-bottom-color:var(--blue);}
+  .step.done{color:var(--green);border-bottom-color:var(--green);}
+
+  .flow-box{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+
+  .seg-card{border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fff;}
+  .seg-card:hover{border-color:var(--blue);box-shadow:0 2px 10px rgba(11,95,255,.08);}
+  .seg-card.selected{border-color:var(--blue);background:var(--blue-light);}
+  .seg-card .seg-title{font-weight:700;font-size:14px;margin-bottom:4px;}
+  .seg-card .seg-count{font-size:24px;font-weight:800;color:var(--blue);}
+  .seg-card .seg-desc{font-size:12px;color:var(--gray);margin-top:6px;line-height:1.5;}
+
+  .msg-preview{background:#f8f9fb;border:1px solid var(--border);border-radius:14px;padding:16px;font-size:13px;line-height:1.6;position:relative;}
+  .msg-preview .sender{font-size:11px;color:var(--gray);margin-bottom:6px;}
+  .phone-frame{max-width:300px;margin:0 auto;border:8px solid #1f2937;border-radius:28px;padding:14px;background:#000;}
+  .phone-screen{background:#fff;border-radius:18px;padding:14px;min-height:200px;}
+
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;}
+  .switch{width:38px;height:20px;border-radius:20px;background:var(--border);position:relative;cursor:pointer;transition:.2s;}
+  .switch.on{background:var(--blue);}
+  .switch .knob{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:.2s;}
+  .switch.on .knob{left:20px;}
+
+  .privacy-note{display:flex;gap:10px;background:var(--blue-light);border:1px solid #cfe0ff;border-radius:10px;padding:12px 14px;font-size:12px;color:#1d4ed8;margin-top:14px;}
+  .privacy-note .ic{font-size:16px;}
+
+  .flow-diagram{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 0;}
+  .flow-node{flex:1;text-align:center;background:#fafbfc;border:1px dashed var(--border);border-radius:10px;padding:14px 8px;font-size:12px;color:var(--text-soft);}
+  .flow-node b{display:block;font-size:13px;color:var(--text);margin-bottom:4px;}
+  .flow-arrow{color:var(--gray);font-size:18px;}
+
+  .toast{position:fixed;bottom:28px;right:28px;background:#111827;color:#fff;padding:14px 20px;border-radius:10px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:999;}
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:998;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:26px;width:420px;max-width:90vw;}
+  .modal h3{margin-top:0;}
+  .modal-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid var(--border);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+
+  .funnel-bar{display:flex;height:34px;border-radius:8px;overflow:hidden;font-size:11px;color:#fff;}
+  .funnel-bar div{display:flex;align-items:center;justify-content:center;}
+
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--gray);margin-top:8px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .empty-hint{color:var(--gray);font-size:13px;text-align:center;padding:30px 0;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">🏠 이사매치 <span class="tag">AI</span></div>
+    <div class="nav" id="nav">
+      <button data-page="dashboard" class="active"><span class="icon">📊</span> 대시보드</button>
+      <button data-page="target"><span class="icon">🎯</span> AI 타겟 추출</button>
+      <button data-page="message"><span class="icon">✍️</span> 광고문구 생성</button>
+      <button data-page="send"><span class="icon">📤</span> AI 자동 발송</button>
+      <button data-page="result"><span class="icon">📈</span> 결과·피드백</button>
+      <button data-page="privacy"><span class="icon">🔒</span> 데이터·동의 구조</button>
+    </div>
+    <div class="sidebar-foot">테스트 계정: 강남웰빙공인중개사<br>SKT 에이닷전화 연동중</div>
+  </div>
+
+  <div class="main" id="main"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+/* ===================== Mock Data ===================== */
+const segments = [
+  {
+    id:'lease', title:'전세만기 임박형', icon:'⏰', count:128, score:92,
+    desc:'전세 만기 60일 이내 + 최근 부동산앱 사용 흔적 보유. 가장 전환 가능성이 높은 핵심 타겟.',
+    signals:['중개망 CRM: 전세만기 D-45 이내','앱사용 이력: 최근 7일 내 부동산앱 사용'],
+    sample:'전세 만기 다가오시죠? 인근 신규 매물 안내드립니다.',
+    color:'#ef4444'
+  },
+  {
+    id:'call', title:'통화이력 보유형', icon:'📞', count:64, score:78,
+    desc:'에이닷전화 비즈연락처로 최근 1개월 내 사무소에 전화 문의한 적 있는 고객.',
+    signals:['통화이력: 최근 30일 내 사무소 발신/수신 통화'],
+    sample:'문의하신 OO동 매물 관련 추가 매물 안내드립니다.',
+    color:'#f59e0b'
+  },
+  {
+    id:'app', title:'앱탐색형 (관심)', icon:'📱', count:241, score:54,
+    desc:'네이버부동산 등 부동산 전용 앱을 최근 1개월 내 사용한 SKT 광고 동의 회원.',
+    signals:['앱사용 이력: 최근 30일 내 부동산앱 사용','중개사 직접 통화/상담 이력 없음'],
+    sample:'관심 지역에 신규 매물이 등록되었습니다.',
+    color:'#3b82f6'
+  },
+];
+
+let state = {
+  selectedSegments: [],
+  property: { region:'서울 강남구 역삼동', size:'24평', price:'전세 6억', feature:'역세권, 리모델링 완료' },
+  generatedMsgs: {},
+  budget: 150000,
+  sentCampaigns: [
+    {id:1, date:'2026-06-18', segment:'전세만기 임박형', sent:96, clickRate:18, replyRate:9, cost:48000, status:'완료'},
+    {id:2, date:'2026-06-12', segment:'통화이력 보유형', sent:52, clickRate:31, replyRate:12, cost:26000, status:'완료'},
+    {id:3, date:'2026-06-05', segment:'앱탐색형 (관심)', sent:180, clickRate:7, replyRate:2, cost:90000, status:'완료'},
+  ]
+};
+
+/* ===================== Router ===================== */
+const pages = {};
+function render(page){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  document.getElementById('main').innerHTML = pages[page]();
+  attachHandlers(page);
+}
+document.getElementById('nav').addEventListener('click', e=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  render(btn.dataset.page);
+});
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+/* ===================== Dashboard ===================== */
+pages.dashboard = () => `
+  <div class="topbar">
+    <div>
+      <h1>대시보드</h1>
+      <div class="sub">강남웰빙공인중개사 · 2026.06.22 기준</div>
+    </div>
+    <span class="pill blue">에이닷전화 연동 정상</span>
+  </div>
+
+  <div class="grid cols-4">
+    <div class="card"><h3>이번달 발굴된 타겟</h3><div class="big">433명</div><div class="delta up">▲ 전월 대비 12%</div></div>
+    <div class="card"><h3>발송 캠페인</h3><div class="big">3건</div><div class="delta up">완료 3 · 진행중 0</div></div>
+    <div class="card"><h3>평균 회신율</h3><div class="big">7.7%</div><div class="delta up">▲ 1.4%p</div></div>
+    <div class="card"><h3>이번달 광고비</h3><div class="big">164,000원</div><div class="delta down">CPM+CPA 혼합과금</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>🎯 오늘의 추천 액션</h2></div>
+    <div class="grid cols-3">
+      <div class="card" style="border-left:4px solid #ef4444;">
+        <h3>전세만기 임박형 타겟 128명</h3>
+        <p style="font-size:13px;color:var(--text-soft);">신규 발굴된 고스코어 타겟이 있습니다. 지금 캠페인을 만들어보세요.</p>
+        <button class="btn primary" onclick="render('target')">타겟 추출하기 →</button>
+      </div>
+      <div class="card" style="border-left:4px solid #16a34a;">
+        <h3>지난 캠페인 학습 완료</h3>
+        <p style="font-size:13px;color:var(--text-soft);">"전세 만기" 키워드 포함 문구의 클릭률이 평균보다 2.3배 높았습니다.</p>
+        <button class="btn ghost" onclick="render('result')">결과 보기 →</button>
+      </div>
+      <div class="card" style="border-left:4px solid #f59e0b;">
+        <h3>동의 미확보 고객 18명</h3>
+        <p style="font-size:13px;color:var(--text-soft);">통신데이터 활용 동의가 없어 타겟에서 자동 제외되었습니다.</p>
+        <button class="btn ghost" onclick="render('privacy')">동의 구조 확인 →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>최근 캠페인</h2></div>
+    <div class="card" style="padding:0;">
+      <table>
+        <thead><tr><th>일자</th><th>세그먼트</th><th>발송수</th><th>클릭률</th><th>회신율</th><th>비용</th><th>상태</th></tr></thead>
+        <tbody>
+          ${state.sentCampaigns.map(c=>`
+            <tr>
+              <td>${c.date}</td><td>${c.segment}</td><td>${c.sent}명</td>
+              <td>${c.clickRate}%</td><td>${c.replyRate}%</td><td>${c.cost.toLocaleString()}원</td>
+              <td><span class="pill green">${c.status}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+
+/* ===================== Target Extraction ===================== */
+pages.target = () => `
+  <div class="topbar">
+    <div><h1>AI 타겟 추출</h1><div class="sub">통화 이력 + 앱사용 이력 + CRM 신호를 결합해 거래 임박 스코어를 산출합니다.</div></div>
+  </div>
+
+  <div class="flow-diagram">
+    <div class="flow-node"><b>📋 중개망 CRM</b>전세만기·구입예상 신호</div>
+    <div class="flow-arrow">＋</div>
+    <div class="flow-node"><b>📞 통화 이력</b>최근 1개월 사무소 발신/수신</div>
+    <div class="flow-arrow">＋</div>
+    <div class="flow-node"><b>📱 앱사용 이력</b>최근 1개월 부동산앱 사용</div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-node" style="border:1px solid var(--blue);background:var(--blue-light);color:var(--blue);"><b>AI 스코어링</b>이사·거래 임박도</div>
+  </div>
+
+  <div class="privacy-note"><span class="ic">🔒</span><span>개인 식별정보는 플랫폼(SKT) 내부에서만 처리됩니다. 중개사에게는 동의를 거친 세그먼트·집계 결과만 제공되며, 미동의 고객은 추출 단계에서 자동 제외됩니다.</span></div>
+
+  <div class="section">
+    <div class="section-head"><h2>세그먼트 선택 (복수 선택 가능)</h2><span class="sub" style="font-size:12px;color:var(--gray)">총 433명 매칭 · 동의 기반</span></div>
+    <div class="grid cols-3" id="segGrid">
+      ${segments.map(s=>`
+        <div class="seg-card ${state.selectedSegments.includes(s.id)?'selected':''}" data-seg="${s.id}">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="seg-title">${s.icon} ${s.title}</div>
+            <span class="badge ${s.score>=80?'high':s.score>=60?'mid':'low'}">스코어 ${s.score}</span>
+          </div>
+          <div class="seg-count">${s.count}<span style="font-size:13px;color:var(--gray);font-weight:500;">명</span></div>
+          <div class="score-bar"><div style="width:${s.score}%"></div></div>
+          <div class="seg-desc">${s.desc}</div>
+          <div style="margin-top:10px;font-size:11px;color:var(--gray);">
+            ${s.signals.map(sig=>`· ${sig}`).join('<br>')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+
+  <div class="section" style="display:flex;justify-content:flex-end;gap:10px;">
+    <button class="btn secondary" onclick="state.selectedSegments=[];render('target')">선택 초기화</button>
+    <button class="btn primary" id="toMessageBtn" ${state.selectedSegments.length===0?'disabled':''} onclick="render('message')">선택한 세그먼트로 광고문구 생성 →</button>
+  </div>
+`;
+
+/* ===================== Message Generation ===================== */
+pages.message = () => {
+  const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
+  if(chosen.length===0){
+    return `<div class="topbar"><h1>광고문구 생성</h1></div>
+      <div class="card empty-hint">먼저 [AI 타겟 추출]에서 세그먼트를 선택해주세요.<br><br><button class="btn primary" onclick="render('target')">타겟 추출로 이동</button></div>`;
+  }
+  return `
+  <div class="topbar"><div><h1>AI 광고문구·템플릿 자동 생성</h1><div class="sub">매물 정보와 세그먼트 특성을 반영해 세그먼트별로 다른 톤의 문구를 생성합니다.</div></div></div>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px;">매물 정보 입력</h3>
+    <div class="grid cols-4">
+      <div><label style="font-size:12px;color:var(--gray);">지역</label><input id="p_region" value="${state.property.region}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">평수</label><input id="p_size" value="${state.property.size}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">가격</label><input id="p_price" value="${state.property.price}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">특징</label><input id="p_feature" value="${state.property.feature}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+    </div>
+    <div style="margin-top:14px;"><button class="btn primary" id="genBtn">✨ AI 문구 생성</button></div>
+  </div>
+
+  <div class="section">
+    <div class="grid cols-${chosen.length===1?1:(chosen.length===2?2:3)}" id="msgGrid">
+      ${chosen.map(s=>`
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:700;font-size:14px;">${s.icon} ${s.title}</div>
+            <span class="pill blue">${s.count}명</span>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="msg-preview" style="background:#fff;border:none;padding:0;">
+                <div class="sender">[광고] 강남웰빙공인중개사</div>
+                <div id="msg_${s.id}">${state.generatedMsgs[s.id] || s.sample}</div>
+                <div style="margin-top:10px;font-size:11px;color:var(--gray);">무료수신거부 0808880088</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="btn secondary regenBtn" data-seg="${s.id}" style="flex:1;">🔄 다시 생성</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+
+  <div class="section" style="display:flex;justify-content:flex-end;">
+    <button class="btn primary" onclick="render('send')">발송 설정으로 이동 →</button>
+  </div>
+  `;
+};
+
+const msgTemplates = {
+  lease: [
+    '전세 만기 다가오시죠? 인근 {region} 신규 매물 안내드립니다. {feature}, {size} {price}.',
+    '곧 전세 만기 예정이시죠? {region} 신규 매물({size}, {price})이 등록되어 안내드립니다.',
+    '재계약 전에 비교해보세요. {region} {feature} 매물, {size} {price} 안내드립니다.'
+  ],
+  call: [
+    '문의하신 {region} 매물 관련 추가 매물 안내드립니다. {size} {price}, {feature}.',
+    '지난 문의 감사합니다. {region}에 {feature} 신규 매물({size}, {price})이 나왔어요.',
+    '찾으시던 조건과 비슷한 매물입니다. {region} {size} {price}, {feature}.'
+  ],
+  app: [
+    '관심 지역({region})에 신규 매물이 등록되었습니다. {size} {price}, {feature}.',
+    '{region} 부동산 둘러보고 계셨죠? 신규 매물 {size} {price} 안내드립니다.',
+    '놓치면 아쉬운 매물! {region} {feature}, {size} {price}.'
+  ]
+};
+
+/* ===================== Send Flow ===================== */
+pages.send = () => {
+  const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
+  const totalCount = chosen.reduce((a,s)=>a+s.count,0);
+  const excluded = Math.round(totalCount*0.04);
+  const finalCount = totalCount-excluded;
+  return `
+  <div class="topbar"><div><h1>AI 자동 발송</h1><div class="sub">자연어로 요청하면 Agent가 대상 선정·동의 필터링·법정 표기·스케줄을 자동 처리합니다.</div></div></div>
+
+  ${chosen.length===0?`<div class="card empty-hint">선택된 세그먼트가 없습니다. <button class="btn ghost" onclick="render('target')">타겟 추출로 이동</button></div>`:`
+
+  <div class="card">
+    <h3 style="margin-bottom:10px;">자연어 발송 요청</h3>
+    <div class="msg-preview">"<b>${chosen.map(c=>c.title).join(', ')}</b> 타겟 ${totalCount}명에게 발송해줘, 예산 ${state.budget.toLocaleString()}원 이내로."</div>
+  </div>
+
+  <div class="section grid cols-2">
+    <div class="card">
+      <h3>1. 대상 선정 및 동의 필터링</h3>
+      <table>
+        <tr><td>매칭된 전체 대상</td><td style="text-align:right;font-weight:700;">${totalCount}명</td></tr>
+        <tr><td style="color:var(--red);">동의 미확보 자동 제외</td><td style="text-align:right;color:var(--red);">-${excluded}명</td></tr>
+        <tr><td>최종 발송 대상</td><td style="text-align:right;font-weight:700;color:var(--blue);">${finalCount}명</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>2. 법적 필수 요건 자동 삽입</h3>
+      <ul style="font-size:13px;color:var(--text-soft);padding-left:18px;margin:8px 0;">
+        <li>[광고] 표시 자동 삽입</li>
+        <li>발신자(중개사무소명) 정보 명시</li>
+        <li>무료수신거부 문구 자동 첨부</li>
+        <li>정보통신망법 준수 검증 완료 ✅</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section grid cols-2">
+    <div class="card">
+      <h3>3. 발송 스케줄 최적화</h3>
+      <p style="font-size:13px;color:var(--text-soft);">과거 응답률 데이터 기반, AI가 추천하는 발송 시간대입니다.</p>
+      <div class="legend" style="margin-top:10px;">
+        <span><i style="background:var(--blue);"></i> 추천 시간대: 평일 11:00~13:00, 18:00~19:30</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>4. 예산 설정</h3>
+      <input type="range" min="50000" max="300000" step="10000" value="${state.budget}" id="budgetRange" style="width:100%;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;">
+        <span>예산: <b id="budgetVal">${state.budget.toLocaleString()}</b>원</span>
+        <span style="color:var(--gray);">CPM + CPA 혼합 과금</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="display:flex;justify-content:flex-end;gap:10px;">
+    <button class="btn secondary" onclick="render('message')">← 문구 수정</button>
+    <button class="btn primary" id="approveBtn">📤 발송 승인 요청</button>
+  </div>
+  `}
+  `;
+};
+
+/* ===================== Result & Feedback ===================== */
+pages.result = () => `
+  <div class="topbar"><div><h1>결과 관리 및 피드백 루프</h1><div class="sub">개인 식별정보는 비공개. 세그먼트 단위 집계로만 노출됩니다.</div></div></div>
+
+  <div class="grid cols-3">
+    <div class="card">
+      <h3>전세만기 임박형</h3>
+      <div class="big">18%</div><div class="sub" style="font-size:12px;color:var(--gray);">클릭률 · 회신율 9%</div>
+      <div class="funnel-bar" style="margin-top:10px;">
+        <div style="background:#ef4444;width:18%;">클릭</div>
+        <div style="background:#fca5a5;width:9%;">회신</div>
+        <div style="background:#f3f4f6;color:#999;width:73%;">무반응</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>통화이력 보유형</h3>
+      <div class="big">31%</div><div class="sub" style="font-size:12px;color:var(--gray);">클릭률 · 회신율 12%</div>
+      <div class="funnel-bar" style="margin-top:10px;">
+        <div style="background:#f59e0b;width:31%;">클릭</div>
+        <div style="background:#fcd34d;width:12%;">회신</div>
+        <div style="background:#f3f4f6;color:#999;width:57%;">무반응</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>앱탐색형 (관심)</h3>
+      <div class="big">7%</div><div class="sub" style="font-size:12px;color:var(--gray);">클릭률 · 회신율 2%</div>
+      <div class="funnel-bar" style="margin-top:10px;">
+        <div style="background:#3b82f6;width:7%;">클릭</div>
+        <div style="background:#93c5fd;width:2%;">회신</div>
+        <div style="background:#f3f4f6;color:#999;width:91%;">무반응</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section grid cols-2">
+    <div class="card">
+      <h3>🧠 AI 학습 인사이트</h3>
+      <ul style="font-size:13px;color:var(--text-soft);padding-left:18px;line-height:1.7;">
+        <li>"전세 만기" 키워드 포함 문구 클릭률 평균 대비 <b style="color:var(--blue);">2.3배</b> 높음</li>
+        <li>통화이력 보유형은 발송 후 <b style="color:var(--blue);">3시간 내</b> 회신 비중이 68%로 가장 높음</li>
+        <li>앱탐색형은 반복 노출 시 클릭률 하락 → 발송 빈도 캡 적용 권장</li>
+      </ul>
+      <div class="privacy-note"><span class="ic">🔁</span><span>이 인사이트는 다음 캠페인의 모듈1 스코어링 모델에 자동 반영되어 타겟 정확도가 개선됩니다.</span></div>
+    </div>
+    <div class="card">
+      <h3>♻️ 재발송 후보 / 휴면 분류</h3>
+      <table>
+        <thead><tr><th>그룹</th><th>인원</th><th>처리</th></tr></thead>
+        <tbody>
+          <tr><td>미반응 (1회)</td><td>312명</td><td><span class="pill orange">재발송 후보</span></td></tr>
+          <tr><td>미반응 (3회 이상)</td><td>74명</td><td><span class="pill red">휴면 처리</span></td></tr>
+          <tr><td>발신거부 등록</td><td>9명</td><td><span class="pill red">영구 제외</span></td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--gray);margin-top:10px;">과도한 반복 발송 방지를 위해 발송 빈도 캡이 자동 적용됩니다.</p>
+    </div>
+  </div>
+`;
+
+/* ===================== Privacy Structure ===================== */
+pages.privacy = () => `
+  <div class="topbar"><div><h1>데이터·동의 구조</h1><div class="sub">중개사 DB와 SKT 통신 데이터는 직접 결합되지 않습니다. 룩어라이크 타겟팅과 동일한 원리입니다.</div></div></div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <h3>중개망 자체 DB (1st party)</h3>
+      <table>
+        <tr><td>데이터 소유</td><td style="text-align:right;">중개사 본인</td></tr>
+        <tr><td>포함 정보</td><td style="text-align:right;">계약자, 상담이력, 전세만기일</td></tr>
+        <tr><td>중개사 가시성</td><td style="text-align:right;color:var(--green);">직접 조회·관리 가능</td></tr>
+        <tr><td>활용 방식</td><td style="text-align:right;">전세만기 예측, 재계약 관리</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>에이닷전화 기반 타겟 풀 (익명)</h3>
+      <table>
+        <tr><td>데이터 소유</td><td style="text-align:right;">SKT (자체 동의 기반)</td></tr>
+        <tr><td>포함 정보</td><td style="text-align:right;">통화이력, 부동산앱 사용이력</td></tr>
+        <tr><td>중개사 가시성</td><td style="text-align:right;color:var(--red);">식별정보 비공개</td></tr>
+        <tr><td>활용 방식</td><td style="text-align:right;">조건 매칭 → 발송 대행</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>5단계 데이터 흐름</h2></div>
+    <div class="flow-diagram">
+      <div class="flow-node"><b>① 조건 입력</b>중개사가 타겟 조건·소재 제공</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><b>② 내부 매칭</b>SKT 내부, 식별정보 비공개</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><b>③ 발송 대행</b>플랫폼이 대신 발송</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><b>④ 집계 리포트</b>세그먼트 단위 결과만 제공</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="border:1px solid var(--green);background:var(--green-light);"><b>⑤ 능동 반응 시 노출</b>고객이 클릭/콜백할 때만</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>이중 동의 체크</h2></div>
+    <div class="card">
+      <div class="toggle" style="margin-bottom:14px;">
+        <div class="switch on" id="consent1"><div class="knob"></div></div>
+        <span>중개사 고객의 데이터 활용 동의 — <b>확보됨</b></span>
+      </div>
+      <div class="toggle">
+        <div class="switch on" id="consent2"><div class="knob"></div></div>
+        <span>SKT 가입자의 맞춤형 광고 동의 — <b>확보됨</b></span>
+      </div>
+      <div class="privacy-note"><span class="ic">⚠️</span><span>두 동의가 모두 충족된 대상만 매칭 풀에 포함됩니다. 위치 기반 "사무소 주변 불특정 다수" 발송은 본 설계에서 제공하지 않습니다.</span></div>
+    </div>
+  </div>
+`;
+
+/* ===================== Handlers ===================== */
+function attachHandlers(page){
+  if(page==='target'){
+    document.querySelectorAll('.seg-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        const id = card.dataset.seg;
+        const idx = state.selectedSegments.indexOf(id);
+        if(idx>-1) state.selectedSegments.splice(idx,1);
+        else state.selectedSegments.push(id);
+        render('target');
+      });
+    });
+  }
+  if(page==='message'){
+    const genBtn = document.getElementById('genBtn');
+    if(genBtn) genBtn.addEventListener('click', ()=>{
+      state.property = {
+        region: document.getElementById('p_region').value,
+        size: document.getElementById('p_size').value,
+        price: document.getElementById('p_price').value,
+        feature: document.getElementById('p_feature').value,
+      };
+      state.selectedSegments.forEach(id=>generateMsg(id));
+      render('message');
+      toast('✨ AI가 세그먼트별 광고문구를 생성했습니다.');
+    });
+    document.querySelectorAll('.regenBtn').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        generateMsg(b.dataset.seg, true);
+        render('message');
+        toast('🔄 새 문구를 생성했습니다.');
+      });
+    });
+  }
+  if(page==='send'){
+    const range = document.getElementById('budgetRange');
+    if(range) range.addEventListener('input', ()=>{
+      state.budget = parseInt(range.value);
+      document.getElementById('budgetVal').textContent = state.budget.toLocaleString();
+    });
+    const approveBtn = document.getElementById('approveBtn');
+    if(approveBtn) approveBtn.addEventListener('click', openApproveModal);
+  }
+  if(page==='privacy'){
+    ['consent1','consent2'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('click', ()=>el.classList.toggle('on'));
+    });
+  }
+}
+
+function generateMsg(segId, random){
+  const tpls = msgTemplates[segId];
+  const tpl = random ? tpls[Math.floor(Math.random()*tpls.length)] : tpls[0];
+  const p = state.property;
+  state.generatedMsgs[segId] = tpl
+    .replace(/{region}/g,p.region).replace(/{size}/g,p.size)
+    .replace(/{price}/g,p.price).replace(/{feature}/g,p.feature);
+}
+
+function openApproveModal(){
+  const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
+  const totalCount = chosen.reduce((a,s)=>a+s.count,0);
+  const excluded = Math.round(totalCount*0.04);
+  const finalCount = totalCount-excluded;
+  const cpm = 500, cpaRate=0.08, cpaCost=2000;
+  const estCost = finalCount*cpm + Math.round(finalCount*cpaRate)*cpaCost;
+  document.getElementById('modalBody').innerHTML = `
+    <h3>📤 발송 승인 요청</h3>
+    <div class="modal-row"><span>대상 세그먼트</span><b>${chosen.map(c=>c.title).join(', ')}</b></div>
+    <div class="modal-row"><span>최종 발송 대상</span><b>${finalCount}명</b></div>
+    <div class="modal-row"><span>예상 비용 (CPM+CPA)</span><b>${estCost.toLocaleString()}원</b></div>
+    <div class="modal-row"><span>설정 예산</span><b style="color:${estCost>state.budget?'var(--red)':'var(--green)'}">${state.budget.toLocaleString()}원</b></div>
+    <div class="modal-row" style="border-bottom:none;"><span>발송 예정 시간대</span><b>평일 11:00~13:00</b></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">취소</button>
+      <button class="btn primary" onclick="confirmSend(${finalCount}, ${estCost})">승인하고 발송</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+function confirmSend(count, cost){
+  closeModal();
+  state.sentCampaigns.unshift({
+    id: Date.now(), date:'2026-06-22',
+    segment: segments.filter(s=>state.selectedSegments.includes(s.id)).map(s=>s.title).join(', '),
+    sent: count, clickRate: Math.floor(Math.random()*15)+10, replyRate: Math.floor(Math.random()*8)+3,
+    cost, status:'발송완료'
+  });
+  toast(`✅ ${count}명에게 발송이 완료되었습니다.`);
+  render('dashboard');
+}
+
+/* init */
+render('dashboard');
+</script>
+</body>
+</html>
