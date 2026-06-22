@@ -197,9 +197,23 @@ const districts = [
 ];
 const allDongNames = districts.flatMap(d=>d.dongs.map(x=>x.name));
 
+/* 신호 보유 조합별 고객 분포 (Venn 버킷). CRM/통화이력/앱사용이력 3개 신호의 AND/OR 조합 계산용 */
+const signalBuckets = [
+  { crm:true,  call:false, app:false, count:50  },
+  { crm:false, call:true,  app:false, count:40  },
+  { crm:false, call:false, app:true,  count:200 },
+  { crm:true,  call:true,  app:false, count:30  },
+  { crm:true,  call:false, app:true,  count:25  },
+  { crm:false, call:true,  app:true,  count:15  },
+  { crm:true,  call:true,  app:true,  count:73  },
+];
+const signalLabels = { crm:'중개망 CRM 신호', call:'통화이력', app:'앱사용이력' };
+
 let state = {
   selectedSegments: [],
   selectedDongs: [...allDongNames], // 기본값: 전체 지역 (제한 없음)
+  customSegments: [],
+  builder: { crm:true, call:true, app:false, logic:'AND' },
   property: { region:'서울 강남구 역삼동', size:'24평', price:'전세 6억', feature:'역세권, 리모델링 완료' },
   generatedMsgs: {},
   budget: 150000,
@@ -218,6 +232,29 @@ function regionRatio(){
 }
 function getFilteredCount(seg){
   return Math.max(0, Math.round(seg.count * regionRatio()));
+}
+function getAllSegments(){
+  return [...segments, ...state.customSegments];
+}
+function builderSelectedKeys(){
+  return ['crm','call','app'].filter(k=>state.builder[k]);
+}
+function computeBuilderBaseCount(){
+  const sel = builderSelectedKeys();
+  if(sel.length===0) return 0;
+  return signalBuckets.reduce((sum,b)=>{
+    const matches = state.builder.logic==='AND' ? sel.every(s=>b[s]) : sel.some(s=>b[s]);
+    return matches ? sum+b.count : sum;
+  },0);
+}
+function regionLabel(){
+  return regionRatio()===1 ? '전체 지역' : (state.selectedDongs.length? state.selectedDongs.join(', ') : '선택된 지역 없음');
+}
+function builderConditionText(){
+  const sel = builderSelectedKeys();
+  if(sel.length===0) return '신호를 1개 이상 선택해주세요';
+  const sigText = sel.map(s=>signalLabels[s]).join(state.builder.logic==='AND' ? ' AND ' : ' OR ');
+  return `(${sigText}) AND [${regionLabel()} 거주고객]`;
 }
 
 /* ===================== Router ===================== */
@@ -345,9 +382,42 @@ pages.target = () => `
   </div>
 
   <div class="section">
-    <div class="section-head"><h2>세그먼트 선택 (복수 선택 가능)</h2><span class="sub" style="font-size:12px;color:var(--gray)">총 ${segments.reduce((a,s)=>a+getFilteredCount(s),0)}명 매칭 · 동의 기반 · 지역 필터 적용됨</span></div>
+    <div class="section-head"><h2>🧩 신호 조건 조합 빌더 (AND / OR)</h2></div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px;">신호 3종을 AND 또는 OR로 조합하고, 지역 선택과는 항상 AND로 결합됩니다.</div>
+      <div class="grid cols-3">
+        <label class="checkbox-row" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;">
+          <input type="checkbox" class="sigCheck" data-sig="crm" ${state.builder.crm?'checked':''}> 📋 중개망 CRM Data
+        </label>
+        <label class="checkbox-row" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;">
+          <input type="checkbox" class="sigCheck" data-sig="call" ${state.builder.call?'checked':''}> 📞 통화이력
+        </label>
+        <label class="checkbox-row" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;">
+          <input type="checkbox" class="sigCheck" data-sig="app" ${state.builder.app?'checked':''}> 📱 앱사용이력
+        </label>
+      </div>
+
+      <div style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;color:var(--gray);">신호 결합 방식:</span>
+        <button class="btn ${state.builder.logic==='AND'?'primary':'secondary'} logicBtn" data-logic="AND">AND (모두 충족)</button>
+        <button class="btn ${state.builder.logic==='OR'?'primary':'secondary'} logicBtn" data-logic="OR">OR (하나라도 충족)</button>
+      </div>
+
+      <div class="msg-preview" style="margin-top:14px;">
+        조건: <b>${builderConditionText()}</b>
+        <div style="margin-top:6px;font-size:22px;font-weight:800;color:var(--blue);">${getFilteredCount({count:computeBuilderBaseCount()})}<span style="font-size:13px;color:var(--gray);font-weight:500;"> 명 매칭</span></div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <button class="btn primary" id="addCustomSegBtn" ${builderSelectedKeys().length===0?'disabled':''}>＋ 이 조건으로 세그먼트 추출</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>세그먼트 선택 (복수 선택 가능)</h2><span class="sub" style="font-size:12px;color:var(--gray)">총 ${getAllSegments().reduce((a,s)=>a+getFilteredCount(s),0)}명 매칭 · 동의 기반 · 지역 필터 적용됨</span></div>
     <div class="grid cols-3" id="segGrid">
-      ${segments.map(s=>{
+      ${getAllSegments().map(s=>{
         const fc = getFilteredCount(s);
         return `
         <div class="seg-card ${state.selectedSegments.includes(s.id)?'selected':''}" data-seg="${s.id}">
@@ -362,6 +432,7 @@ pages.target = () => `
           <div style="margin-top:10px;font-size:11px;color:var(--gray);">
             ${s.signals.map(sig=>`· ${sig}`).join('<br>')}
           </div>
+          ${s.custom?`<button class="btn ghost delCustomBtn" data-seg="${s.id}" style="margin-top:10px;width:100%;">🗑 이 커스텀 세그먼트 삭제</button>`:''}
         </div>
       `;}).join('')}
     </div>
@@ -375,7 +446,7 @@ pages.target = () => `
 
 /* ===================== Message Generation ===================== */
 pages.message = () => {
-  const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
+  const chosen = getAllSegments().filter(s=>state.selectedSegments.includes(s.id));
   if(chosen.length===0){
     return `<div class="topbar"><h1>광고문구 생성</h1></div>
       <div class="card empty-hint">먼저 [AI 타겟 추출]에서 세그먼트를 선택해주세요.<br><br><button class="btn primary" onclick="render('target')">타겟 추출로 이동</button></div>`;
@@ -406,7 +477,7 @@ pages.message = () => {
             <div class="phone-screen">
               <div class="msg-preview" style="background:#fff;border:none;padding:0;">
                 <div class="sender">[광고] 강남웰빙공인중개사</div>
-                <div id="msg_${s.id}">${state.generatedMsgs[s.id] || s.sample}</div>
+                <div id="msg_${s.id}">${state.generatedMsgs[s.id] || s.sample || '관심 매물 안내드립니다. 위 [✨ AI 문구 생성]을 눌러 문구를 생성해주세요.'}</div>
                 <div style="margin-top:10px;font-size:11px;color:var(--gray);">무료수신거부 0808880088</div>
               </div>
             </div>
@@ -440,12 +511,17 @@ const msgTemplates = {
     '관심 지역({region})에 신규 매물이 등록되었습니다. {size} {price}, {feature}.',
     '{region} 부동산 둘러보고 계셨죠? 신규 매물 {size} {price} 안내드립니다.',
     '놓치면 아쉬운 매물! {region} {feature}, {size} {price}.'
+  ],
+  default: [
+    '고객님 조건에 맞는 매물이 등록되었습니다. {region} {size} {price}, {feature}.',
+    '{region}에 관심 가지셨던 조건과 비슷한 매물이 나왔습니다. {size} {price}, {feature}.',
+    '신규 매물 안내드립니다. {region} {feature}, {size} {price}.'
   ]
 };
 
 /* ===================== Send Flow ===================== */
 pages.send = () => {
-  const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
+  const chosen = getAllSegments().filter(s=>state.selectedSegments.includes(s.id));
   const totalCount = chosen.reduce((a,s)=>a+getFilteredCount(s),0);
   const excluded = Math.round(totalCount*0.04);
   const finalCount = totalCount-excluded;
@@ -660,6 +736,49 @@ function attachHandlers(page){
     if(selAll) selAll.addEventListener('click', ()=>{ state.selectedDongs=[...allDongNames]; render('target'); });
     const clrAll = document.getElementById('clearDongBtn');
     if(clrAll) clrAll.addEventListener('click', ()=>{ state.selectedDongs=[]; render('target'); });
+
+    document.querySelectorAll('.sigCheck').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        state.builder[cb.dataset.sig] = cb.checked;
+        render('target');
+      });
+    });
+    document.querySelectorAll('.logicBtn').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        state.builder.logic = b.dataset.logic;
+        render('target');
+      });
+    });
+    const addBtn = document.getElementById('addCustomSegBtn');
+    if(addBtn) addBtn.addEventListener('click', ()=>{
+      const sel = builderSelectedKeys();
+      if(sel.length===0) return;
+      const base = computeBuilderBaseCount();
+      const sigText = sel.map(s=>signalLabels[s]).join(state.builder.logic==='AND' ? ' AND ' : ' OR ');
+      const seg = {
+        id: 'custom_'+Date.now(),
+        title: `${sigText} (${regionLabel()})`,
+        icon: '🧩',
+        count: base,
+        score: state.builder.logic==='AND' ? Math.min(95, 65+sel.length*8) : Math.min(80, 50+sel.length*6),
+        desc: `커스텀 조건으로 추출된 세그먼트: ${builderConditionText()}`,
+        signals: sel.map(s=>signalLabels[s]),
+        custom: true
+      };
+      state.customSegments.unshift(seg);
+      state.selectedSegments.push(seg.id);
+      render('target');
+      toast('🧩 조건에 맞는 커스텀 세그먼트가 추가되었습니다.');
+    });
+    document.querySelectorAll('.delCustomBtn').forEach(b=>{
+      b.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const id = b.dataset.seg;
+        state.customSegments = state.customSegments.filter(s=>s.id!==id);
+        state.selectedSegments = state.selectedSegments.filter(sid=>sid!==id);
+        render('target');
+      });
+    });
   }
   if(page==='message'){
     const genBtn = document.getElementById('genBtn');
@@ -700,7 +819,7 @@ function attachHandlers(page){
 }
 
 function generateMsg(segId, random){
-  const tpls = msgTemplates[segId];
+  const tpls = msgTemplates[segId] || msgTemplates.default;
   const tpl = random ? tpls[Math.floor(Math.random()*tpls.length)] : tpls[0];
   const p = state.property;
   state.generatedMsgs[segId] = tpl
@@ -709,7 +828,7 @@ function generateMsg(segId, random){
 }
 
 function openApproveModal(){
-  const chosen = segments.filter(s=>state.selectedSegments.includes(s.id));
+  const chosen = getAllSegments().filter(s=>state.selectedSegments.includes(s.id));
   const totalCount = chosen.reduce((a,s)=>a+getFilteredCount(s),0);
   const excluded = Math.round(totalCount*0.04);
   const finalCount = totalCount-excluded;
@@ -735,7 +854,7 @@ function confirmSend(count, cost){
   closeModal();
   state.sentCampaigns.unshift({
     id: Date.now(), date:'2026-06-22',
-    segment: segments.filter(s=>state.selectedSegments.includes(s.id)).map(s=>s.title).join(', '),
+    segment: getAllSegments().filter(s=>state.selectedSegments.includes(s.id)).map(s=>s.title).join(', '),
     sent: count, clickRate: Math.floor(Math.random()*15)+10, replyRate: Math.floor(Math.random()*8)+3,
     cost, status:'발송완료'
   });
