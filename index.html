@@ -162,21 +162,21 @@ const segments = [
     id:'lease', title:'전세만기 임박형', icon:'⏰', count:128, score:92,
     desc:'전세 만기 60일 이내 + 최근 부동산앱 사용 흔적 보유. 가장 전환 가능성이 높은 핵심 타겟.',
     signals:['중개망 CRM: 전세만기 D-45 이내','앱사용 이력: 최근 7일 내 부동산앱 사용'],
-    sample:'전세 만기 다가오시죠? 인근 신규 매물 안내드립니다.',
+    sample:'전세 만기 다가오시죠? 15년차 지역 전문 중개사가 직접 상담드립니다.',
     color:'#ef4444'
   },
   {
     id:'call', title:'통화이력 보유형', icon:'📞', count:64, score:78,
     desc:'에이닷전화 비즈연락처로 최근 1개월 내 사무소에 전화 문의한 적 있는 고객.',
     signals:['통화이력: 최근 30일 내 사무소 발신/수신 통화'],
-    sample:'문의하신 OO동 매물 관련 추가 매물 안내드립니다.',
+    sample:'문의 감사합니다. 역삼동·대치동 아파트 전문 중개사가 직접 안내드립니다.',
     color:'#f59e0b'
   },
   {
     id:'app', title:'앱탐색형 (관심)', icon:'📱', count:241, score:54,
     desc:'네이버부동산 등 부동산 전용 앱을 최근 1개월 내 사용한 SKT 광고 동의 회원.',
     signals:['앱사용 이력: 최근 30일 내 부동산앱 사용','중개사 직접 통화/상담 이력 없음'],
-    sample:'관심 지역에 신규 매물이 등록되었습니다.',
+    sample:'관심 지역 매물 보고 계셨죠? 강남구 부동산협회 부회장이 직접 안내드립니다.',
     color:'#3b82f6'
   },
 ];
@@ -214,7 +214,14 @@ let state = {
   selectedDongs: [...allDongNames], // 기본값: 전체 지역 (제한 없음)
   customSegments: [],
   builder: { crm:true, call:true, app:false, logic:'AND' },
-  property: { region:'서울 강남구 역삼동', size:'24평', price:'전세 6억', feature:'역세권, 리모델링 완료' },
+  office: {
+    location: '서울 강남구 역삼동',
+    years: '15',
+    specialty: '역삼동·대치동 일대 아파트(대치미도, 역삼래미안 등)',
+    career: '前 법무법인 등기팀 5년 근무 · 강남구 공인중개사협회 부회장',
+    staffSize: '대표 포함 4인(중개보조원 2인, 행정직원 1인)',
+    strength: '등기·세금 상담 원스톱 처리, 매물 직접 임장 후 영상 안내'
+  },
   generatedMsgs: {},
   budget: 150000,
   sentCampaigns: [
@@ -452,15 +459,17 @@ pages.message = () => {
       <div class="card empty-hint">먼저 [AI 타겟 추출]에서 세그먼트를 선택해주세요.<br><br><button class="btn primary" onclick="render('target')">타겟 추출로 이동</button></div>`;
   }
   return `
-  <div class="topbar"><div><h1>AI 광고문구·템플릿 자동 생성</h1><div class="sub">매물 정보와 세그먼트 특성을 반영해 세그먼트별로 다른 톤의 문구를 생성합니다.</div></div></div>
+  <div class="topbar"><div><h1>AI 광고문구·템플릿 자동 생성</h1><div class="sub">매물 스펙이 아닌, 중개사무소·중개사 개인의 신뢰 요소를 내세워 세그먼트별로 다른 톤의 문구를 생성합니다.</div></div></div>
 
   <div class="card">
-    <h3 style="margin-bottom:12px;">매물 정보 입력</h3>
-    <div class="grid cols-4">
-      <div><label style="font-size:12px;color:var(--gray);">지역</label><input id="p_region" value="${state.property.region}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
-      <div><label style="font-size:12px;color:var(--gray);">평수</label><input id="p_size" value="${state.property.size}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
-      <div><label style="font-size:12px;color:var(--gray);">가격</label><input id="p_price" value="${state.property.price}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
-      <div><label style="font-size:12px;color:var(--gray);">특징</label><input id="p_feature" value="${state.property.feature}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+    <h3 style="margin-bottom:12px;">중개사무소·중개사 프로필 입력</h3>
+    <div class="grid cols-2">
+      <div><label style="font-size:12px;color:var(--gray);">사무소 위치</label><input id="o_location" value="${state.office.location}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">경력 (년차)</label><input id="o_years" value="${state.office.years}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">전문 거래 지역·아파트</label><input id="o_specialty" value="${state.office.specialty}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">차별화 경력 (개인 특화 이력)</label><input id="o_career" value="${state.office.career}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;" placeholder="예: 法무사 사무소 근무경력, 강남구 부동산협회장 등"></div>
+      <div><label style="font-size:12px;color:var(--gray);">직원 규모</label><input id="o_staffSize" value="${state.office.staffSize}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">사무소 특장점</label><input id="o_strength" value="${state.office.strength}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
     </div>
     <div style="margin-top:14px;"><button class="btn primary" id="genBtn">✨ AI 문구 생성</button></div>
   </div>
@@ -498,24 +507,24 @@ pages.message = () => {
 
 const msgTemplates = {
   lease: [
-    '전세 만기 다가오시죠? 인근 {region} 신규 매물 안내드립니다. {feature}, {size} {price}.',
-    '곧 전세 만기 예정이시죠? {region} 신규 매물({size}, {price})이 등록되어 안내드립니다.',
-    '재계약 전에 비교해보세요. {region} {feature} 매물, {size} {price} 안내드립니다.'
+    '전세 만기 다가오시죠? {location}에서 {years}년간 {specialty} 전문으로 거래해온 중개사가 직접 상담드립니다. {career}',
+    '곧 전세 만기 예정이시죠? {location} 토박이 {years}년차 중개사입니다. {specialty} 매물은 저희가 가장 잘 압니다. {strength}',
+    '재계약 전에 꼭 상담받아보세요. {career} — {specialty} 전문 중개사가 직접 안내드립니다.'
   ],
   call: [
-    '문의하신 {region} 매물 관련 추가 매물 안내드립니다. {size} {price}, {feature}.',
-    '지난 문의 감사합니다. {region}에 {feature} 신규 매물({size}, {price})이 나왔어요.',
-    '찾으시던 조건과 비슷한 매물입니다. {region} {size} {price}, {feature}.'
+    '문의 감사합니다. {location}에서 {years}년째 {specialty}만 전문으로 다루는 중개사입니다. {strength}',
+    '지난 문의 관련해서요, {career} 경력으로 더 꼼꼼히 봐드릴 수 있습니다. {specialty} 매물 추가로 안내드릴게요.',
+    '찾으시던 조건, {specialty} 전문인 저희가 도와드리겠습니다. {staffSize}로 빠르게 응대 가능합니다.'
   ],
   app: [
-    '관심 지역({region})에 신규 매물이 등록되었습니다. {size} {price}, {feature}.',
-    '{region} 부동산 둘러보고 계셨죠? 신규 매물 {size} {price} 안내드립니다.',
-    '놓치면 아쉬운 매물! {region} {feature}, {size} {price}.'
+    '{specialty} 관심 있으시죠? {location}에서 {years}년간 전문으로 거래해온 중개사무소입니다. {strength}',
+    '{location} 부동산 둘러보고 계셨죠? {career} — 믿고 맡겨주세요.',
+    '{specialty} 매물, {years}년차 전문 중개사가 직접 임장하고 안내드립니다. {staffSize}.'
   ],
   default: [
-    '고객님 조건에 맞는 매물이 등록되었습니다. {region} {size} {price}, {feature}.',
-    '{region}에 관심 가지셨던 조건과 비슷한 매물이 나왔습니다. {size} {price}, {feature}.',
-    '신규 매물 안내드립니다. {region} {feature}, {size} {price}.'
+    '{location}에서 {years}년간 {specialty} 전문으로 거래해온 중개사무소입니다. {career}',
+    '{career} — {specialty} 매물은 저희에게 맡겨주세요. {strength}',
+    '{staffSize} 갖춘 {location} 중개사무소입니다. {specialty} 전문으로 안내드립니다.'
   ]
 };
 
@@ -783,11 +792,13 @@ function attachHandlers(page){
   if(page==='message'){
     const genBtn = document.getElementById('genBtn');
     if(genBtn) genBtn.addEventListener('click', ()=>{
-      state.property = {
-        region: document.getElementById('p_region').value,
-        size: document.getElementById('p_size').value,
-        price: document.getElementById('p_price').value,
-        feature: document.getElementById('p_feature').value,
+      state.office = {
+        location: document.getElementById('o_location').value,
+        years: document.getElementById('o_years').value,
+        specialty: document.getElementById('o_specialty').value,
+        career: document.getElementById('o_career').value,
+        staffSize: document.getElementById('o_staffSize').value,
+        strength: document.getElementById('o_strength').value,
       };
       state.selectedSegments.forEach(id=>generateMsg(id));
       render('message');
@@ -821,10 +832,11 @@ function attachHandlers(page){
 function generateMsg(segId, random){
   const tpls = msgTemplates[segId] || msgTemplates.default;
   const tpl = random ? tpls[Math.floor(Math.random()*tpls.length)] : tpls[0];
-  const p = state.property;
+  const o = state.office;
   state.generatedMsgs[segId] = tpl
-    .replace(/{region}/g,p.region).replace(/{size}/g,p.size)
-    .replace(/{price}/g,p.price).replace(/{feature}/g,p.feature);
+    .replace(/{location}/g,o.location).replace(/{years}/g,o.years)
+    .replace(/{specialty}/g,o.specialty).replace(/{career}/g,o.career)
+    .replace(/{staffSize}/g,o.staffSize).replace(/{strength}/g,o.strength);
 }
 
 function openApproveModal(){
