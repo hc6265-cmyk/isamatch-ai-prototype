@@ -215,6 +215,9 @@ let state = {
   customSegments: [],
   builder: { crm:true, call:true, app:false, logic:'AND' },
   office: {
+    officeName: '강남웰빙공인중개사',
+    agentName: '김민준 대표',
+    phone: '010-1234-5678',
     location: '서울 강남구 역삼동',
     years: '15',
     specialty: '역삼동·대치동 일대 아파트(대치미도, 역삼래미안 등)',
@@ -464,6 +467,9 @@ pages.message = () => {
   <div class="card">
     <h3 style="margin-bottom:12px;">중개사무소·중개사 프로필 입력</h3>
     <div class="grid cols-2">
+      <div><label style="font-size:12px;color:var(--gray);">사무소명</label><input id="o_officeName" value="${state.office.officeName}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">대표 중개사 성명</label><input id="o_agentName" value="${state.office.agentName}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
+      <div><label style="font-size:12px;color:var(--gray);">연락처</label><input id="o_phone" value="${state.office.phone}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
       <div><label style="font-size:12px;color:var(--gray);">사무소 위치</label><input id="o_location" value="${state.office.location}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
       <div><label style="font-size:12px;color:var(--gray);">경력 (년차)</label><input id="o_years" value="${state.office.years}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
       <div><label style="font-size:12px;color:var(--gray);">전문 거래 지역·아파트</label><input id="o_specialty" value="${state.office.specialty}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;margin-top:4px;"></div>
@@ -484,9 +490,9 @@ pages.message = () => {
           </div>
           <div class="phone-frame">
             <div class="phone-screen">
-              <div class="msg-preview" style="background:#fff;border:none;padding:0;">
-                <div class="sender">[광고] 강남웰빙공인중개사</div>
-                <div id="msg_${s.id}">${state.generatedMsgs[s.id] || s.sample || '관심 매물 안내드립니다. 위 [✨ AI 문구 생성]을 눌러 문구를 생성해주세요.'}</div>
+              <div class="msg-preview" style="background:#fff;border:none;padding:0;white-space:pre-line;">
+                <div class="sender">[광고] ${state.office.officeName}</div>
+                <div id="msg_${s.id}">${state.generatedMsgs[s.id] || s.sample || '위 [✨ AI 문구 생성]을 눌러 문구를 생성해주세요.'}</div>
                 <div style="margin-top:10px;font-size:11px;color:var(--gray);">무료수신거부 0808880088</div>
               </div>
             </div>
@@ -499,34 +505,42 @@ pages.message = () => {
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-head"><h2>📇 모바일 명함</h2><span style="font-size:12px;color:var(--gray);">문자에 첨부하거나 카카오톡으로 함께 전달해보세요</span></div>
+    <div class="card" style="max-width:380px;">
+      <div id="bizCardPreview" style="border-radius:16px;background:linear-gradient(135deg,#0b5fff,#0a3fb8);color:#fff;padding:22px;">
+        <div style="font-size:11px;opacity:.85;">${state.office.officeName}</div>
+        <div style="font-size:20px;font-weight:800;margin-top:4px;">${state.office.agentName}</div>
+        <div style="font-size:12px;margin-top:6px;opacity:.92;line-height:1.5;">${state.office.years}년차 공인중개사 · ${state.office.career}</div>
+        <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,.3);padding-top:10px;font-size:12px;line-height:1.7;">
+          📍 ${state.office.location}<br>
+          🏠 ${state.office.specialty}<br>
+          📞 ${state.office.phone}
+        </div>
+      </div>
+      <button class="btn primary" id="downloadCardBtn" style="width:100%;margin-top:12px;">📥 모바일 명함 다운로드 (PNG)</button>
+    </div>
+  </div>
+
   <div class="section" style="display:flex;justify-content:flex-end;">
     <button class="btn primary" onclick="render('send')">발송 설정으로 이동 →</button>
   </div>
   `;
 };
 
-const msgTemplates = {
-  lease: [
-    '전세 만기 다가오시죠? {location}에서 {years}년간 {specialty} 전문으로 거래해온 중개사가 직접 상담드립니다. {career}',
-    '곧 전세 만기 예정이시죠? {location} 토박이 {years}년차 중개사입니다. {specialty} 매물은 저희가 가장 잘 압니다. {strength}',
-    '재계약 전에 꼭 상담받아보세요. {career} — {specialty} 전문 중개사가 직접 안내드립니다.'
-  ],
-  call: [
-    '문의 감사합니다. {location}에서 {years}년째 {specialty}만 전문으로 다루는 중개사입니다. {strength}',
-    '지난 문의 관련해서요, {career} 경력으로 더 꼼꼼히 봐드릴 수 있습니다. {specialty} 매물 추가로 안내드릴게요.',
-    '찾으시던 조건, {specialty} 전문인 저희가 도와드리겠습니다. {staffSize}로 빠르게 응대 가능합니다.'
-  ],
-  app: [
-    '{specialty} 관심 있으시죠? {location}에서 {years}년간 전문으로 거래해온 중개사무소입니다. {strength}',
-    '{location} 부동산 둘러보고 계셨죠? {career} — 믿고 맡겨주세요.',
-    '{specialty} 매물, {years}년차 전문 중개사가 직접 임장하고 안내드립니다. {staffSize}.'
-  ],
-  default: [
-    '{location}에서 {years}년간 {specialty} 전문으로 거래해온 중개사무소입니다. {career}',
-    '{career} — {specialty} 매물은 저희에게 맡겨주세요. {strength}',
-    '{staffSize} 갖춘 {location} 중개사무소입니다. {specialty} 전문으로 안내드립니다.'
-  ]
+/* 세그먼트별 짧은 후킹 문구 (1줄) — 본문은 composeMessage()에서 구조화하여 조립 */
+const msgHooks = {
+  lease: ['전세 만기 다가오시죠?', '곧 전세 만기 예정이시죠?', '재계약 전, 꼭 비교해보세요'],
+  call:  ['문의 감사합니다', '찾으시던 조건, 안내드려요', '추가 매물 안내드립니다'],
+  app:   ['관심 지역 매물 보고 계셨죠?', '둘러보시던 그 지역이에요', '놓치면 아쉬운 타이밍입니다'],
+  default: ['안녕하세요, 고객님', '신규 매물 안내드립니다', '상담 도와드리겠습니다'],
 };
+function composeMessage(segId, hookIdx){
+  const o = state.office;
+  const hooks = msgHooks[segId] || msgHooks.default;
+  const hook = hooks[hookIdx % hooks.length];
+  return `${hook}\n\n🏠 ${o.specialty}\n👤 ${o.years}년차 · ${o.career}\n⭐ ${o.strength}\n\n📞 ${o.phone} 상담 문의`;
+}
 
 /* ===================== Send Flow ===================== */
 pages.send = () => {
@@ -793,6 +807,9 @@ function attachHandlers(page){
     const genBtn = document.getElementById('genBtn');
     if(genBtn) genBtn.addEventListener('click', ()=>{
       state.office = {
+        officeName: document.getElementById('o_officeName').value,
+        agentName: document.getElementById('o_agentName').value,
+        phone: document.getElementById('o_phone').value,
         location: document.getElementById('o_location').value,
         years: document.getElementById('o_years').value,
         specialty: document.getElementById('o_specialty').value,
@@ -811,6 +828,8 @@ function attachHandlers(page){
         toast('🔄 새 문구를 생성했습니다.');
       });
     });
+    const dlBtn = document.getElementById('downloadCardBtn');
+    if(dlBtn) dlBtn.addEventListener('click', downloadBusinessCard);
   }
   if(page==='send'){
     const range = document.getElementById('budgetRange');
@@ -830,13 +849,73 @@ function attachHandlers(page){
 }
 
 function generateMsg(segId, random){
-  const tpls = msgTemplates[segId] || msgTemplates.default;
-  const tpl = random ? tpls[Math.floor(Math.random()*tpls.length)] : tpls[0];
+  const hooks = msgHooks[segId] || msgHooks.default;
+  const idx = random ? Math.floor(Math.random()*hooks.length) : 0;
+  state.generatedMsgs[segId] = composeMessage(segId, idx);
+}
+
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
+  let line = '';
+  for(const ch of text){
+    const test = line + ch;
+    if(line && ctx.measureText(test).width > maxWidth){
+      ctx.fillText(line, x, y);
+      line = ch;
+      y += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, y);
+  return y + lineHeight;
+}
+
+function downloadBusinessCard(){
   const o = state.office;
-  state.generatedMsgs[segId] = tpl
-    .replace(/{location}/g,o.location).replace(/{years}/g,o.years)
-    .replace(/{specialty}/g,o.specialty).replace(/{career}/g,o.career)
-    .replace(/{staffSize}/g,o.staffSize).replace(/{strength}/g,o.strength);
+  const W = 750, H = 430;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, '#0b5fff');
+  grad.addColorStop(1, '#0a3fb8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '20px sans-serif';
+  ctx.fillText(o.officeName, 40, 50);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 38px sans-serif';
+  ctx.fillText(o.agentName, 40, 105);
+
+  ctx.font = '17px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  let y = wrapCanvasText(ctx, `${o.years}년차 공인중개사 · ${o.career}`, 40, 140, W-80, 24);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath(); ctx.moveTo(40, y+10); ctx.lineTo(W-40, y+10); ctx.stroke();
+
+  ctx.font = '19px sans-serif';
+  ctx.fillStyle = '#fff';
+  y += 50;
+  [`📍 ${o.location}`, `🏠 ${o.specialty}`, `📞 ${o.phone}`].forEach(line=>{
+    y = wrapCanvasText(ctx, line, 40, y, W-80, 28) + 6;
+  });
+
+  canvas.toBlob(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${o.agentName}_모바일명함.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('📥 모바일 명함이 다운로드되었습니다.');
+  });
 }
 
 function openApproveModal(){
